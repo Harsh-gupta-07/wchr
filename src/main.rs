@@ -1,55 +1,42 @@
-use std::{fs::canonicalize, path::{Path, PathBuf}, sync::mpsc::channel};
+use std::{fs::canonicalize, sync::mpsc::channel, thread::spawn};
 
+use ::wchr::runner;
 use clap::Parser;
-use notify::{Config, Event, EventKind, RecommendedWatcher, Result, Watcher};
+use notify::{ Result};
+use notify_debouncer_full::DebouncedEvent;
+use wchr::wchr;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    path: PathBuf,
-
-    /// files to ignore
-    #[arg(short, long)]
-    ignore: Vec<PathBuf>,
+    /// Command to run on save example. wchr "npm run dev"
+    cmd: String,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    println!("{:?}", args.ignore);
+    let watch_dir = canonicalize(".").unwrap();
 
-    let (tx, rx) = channel();
+    if !watch_dir.join(".gitignore").exists() {
+        println!(".gitignore not found watching all directories.")
+    } else {
+        println!(".gitignore Found.")
+    }
 
-    let mut watcher = RecommendedWatcher::new(
-        move |res: Result<Event>| {
-            tx.send(res).unwrap();
-        },
-        Config::default(),
-    )?;
+    let (_deb,wchr_rx) = wchr::wchr(&watch_dir)?;
+    let (r_tx, r_rx) = channel::<Vec<DebouncedEvent>>();
 
-    watcher.watch(&canonicalize(".").unwrap(), notify::RecursiveMode::Recursive)?;
+    spawn(move || runner::cmd_runner(r_rx, watch_dir.clone(), args.cmd.clone()));
 
-    println!("Watching {:?}", canonicalize(".").unwrap());
-    
-    for result in rx{
-        match result {
-            Ok(r)=>handle(r),
-            Err(err)=> eprintln!("Error: {err}")
+    while let Ok(events) = wchr_rx.recv() {
+        if r_tx.send(events).is_err() {
+            eprintln!("Command runner disconnected.");
+            break;
         }
     }
 
     Ok(())
 }
 
-fn handle(r:Event){
-    let mut ig = canonicalize("./target").unwrap();
-
-    if matches!(r.kind, EventKind::Modify(_)){
-        for path in &r.paths{
-            if !path.starts_with(&ig){
-                println!("{:?}", r);
-            }
-        }
-    }
-}
