@@ -1,10 +1,9 @@
 use std::{fs::canonicalize, sync::mpsc::channel, thread::spawn};
 
-use ::wchr::runner;
+use ::wchr::{output, runner, wchr};
 use clap::Parser;
-use notify::{ Result};
+use notify::Result;
 use notify_debouncer_full::DebouncedEvent;
-use wchr::wchr;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -20,23 +19,28 @@ fn main() -> Result<()> {
     let watch_dir = canonicalize(".").unwrap();
 
     if !watch_dir.join(".gitignore").exists() {
-        println!(".gitignore not found watching all directories.")
+        println!(
+            "{}",
+            output::warning("No .gitignore found; watching all directories.")
+        );
     } else {
-        println!(".gitignore Found.")
+        println!(
+            "{}",
+            output::success("Using .gitignore to filter watched files.")
+        );
     }
 
-    let (_deb,wchr_rx) = wchr::wchr(&watch_dir)?;
+    let (_deb, wchr_rx) = wchr::wchr(&watch_dir)?;
     let (r_tx, r_rx) = channel::<Vec<DebouncedEvent>>();
 
     spawn(move || runner::cmd_runner(r_rx, watch_dir.clone(), args.cmd.clone()));
 
     while let Ok(events) = wchr_rx.recv() {
         if r_tx.send(events).is_err() {
-            eprintln!("Command runner disconnected.");
+            eprintln!("{}", output::error("Command runner disconnected."));
             break;
         }
     }
 
     Ok(())
 }
-

@@ -1,2 +1,3 @@
-pub mod wchr;
+pub mod output;
 pub mod runner;
+pub mod wchr;
