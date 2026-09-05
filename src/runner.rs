@@ -52,7 +52,7 @@ pub fn cmd_runner(rx: Receiver<Vec<DebouncedEvent>>, watch_dir: PathBuf, cmd: St
         if let Some(mut running_child) = child.take() {
             match running_child.try_wait() {
                 Ok(Some(_status)) => {
-                    println!("{}", output::info("Previous command finished."));
+                    println!("{}", output::info("Previous command terminated."));
                 }
                 Ok(None) => {
                     println!("{}", output::warning("Stopping the current command..."));

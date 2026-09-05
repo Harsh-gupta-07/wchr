@@ -20,7 +20,7 @@ pub fn wchr(
 > {
     println!(
         "{}",
-        output::info(format!("Watching directory: {}", watch_dir.display()))
+        output::info(format!("Current directory: {}", watch_dir.display()))
     );
 
     let (tx, rx) = channel();
