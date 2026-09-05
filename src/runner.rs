@@ -70,7 +70,10 @@ pub fn cmd_runner(rx: Receiver<Vec<DebouncedEvent>>, watch_dir: PathBuf, cmd: St
 
 fn should_ignore(gitignore: &Gitignore, events: &[DebouncedEvent], watch_dir: &Path) -> bool {
     for event in events {
-
+        if !matches!(event.kind, Modify(_)){
+            continue;
+        }
+        
         for path in &event.paths {
             let relative_path = match path.strip_prefix(watch_dir) {
                 Ok(path) => path,
