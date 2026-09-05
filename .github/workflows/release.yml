@@ -22,9 +22,9 @@ jobs:
             archive: tar.gz
 
           # macOS Intel
-          - os: macos-13
-            target: x86_64-apple-darwin
-            archive: tar.gz
+          # - os: macos-13
+          #   target: x86_64-apple-darwin
+          #   archive: tar.gz
 
           # Linux
           - os: ubuntu-latest
