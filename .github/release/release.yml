@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          # macOS Apple Silicon
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+
+          # macOS Intel
+          - os: macos-13
+            target: x86_64-apple-darwin
+            archive: tar.gz
+
+          # Linux
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+
+          # Windows
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      # macOS/Linux
+      - name: Create tar.gz archive
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          mkdir -p release
+          cp target/${{ matrix.target }}/release/wchr release/wchr
+          chmod +x release/wchr
+
+          tar -czf \
+            wchr-${{ matrix.target }}.tar.gz \
+            -C release wchr
+
+      # Windows
+      - name: Create ZIP archive
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release
+          Copy-Item `
+            target/${{ matrix.target }}/release/wchr.exe `
+            release/wchr.exe
+
+          Compress-Archive `
+            -Path release/wchr.exe `
+            -DestinationPath wchr-${{ matrix.target }}.zip
+
+      - name: Upload release files
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            wchr-${{ matrix.target }}.*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
