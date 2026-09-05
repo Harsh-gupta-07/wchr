@@ -6,12 +6,18 @@ use std::{
 
 use notify::{Error, RecursiveMode};
 use notify_debouncer_full::{
-    DebounceEventResult, DebouncedEvent, Debouncer, FileIdMap, new_debouncer,
+    DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
 };
 
 pub fn wchr(
     watch_dir: &PathBuf,
-) -> Result<(Debouncer<notify::RecommendedWatcher, FileIdMap>, Receiver<Vec<DebouncedEvent>>), Error> {
+) -> Result<
+    (
+        Debouncer<notify::RecommendedWatcher, RecommendedCache>,
+        Receiver<Vec<DebouncedEvent>>,
+    ),
+    Error,
+> {
     println!("Current Directory: {:?}", watch_dir);
 
     let (tx, rx) = channel();
