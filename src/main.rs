@@ -16,6 +16,9 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
+    // Before the watcher and runner threads exist, so they inherit the signal mask.
+    runner::handle_exit_signals();
+
     let watch_dir = canonicalize(".").unwrap();
 
     if !watch_dir.join(".gitignore").exists() {
